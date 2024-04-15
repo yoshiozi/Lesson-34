@@ -50,26 +50,42 @@ public class EmployeeController {
     }
 
     // 従業員更新画面
-        @GetMapping(value = "/{code}/update")
-        public String getUpdate(@PathVariable String code, Model model) {
+    @GetMapping(value = "/{code}/update")
+    public String getUpdate(@PathVariable String code, Model model) {
 
-            model.addAttribute("employee", employeeService.findByCode(code));
-            // update.htmlに画面遷移
+        model.addAttribute("employee", employeeService.findByCode(code));
+        // update.htmlに画面遷移
+        return "employees/update";
+    }
+
+    // 従業員新規更新処理
+    @PostMapping(value = "/{code}/update")
+    public String postUpdate(@Validated Employee employee,BindingResult res,@PathVariable String code,Model model) {
+
+        if (res.hasErrors()) {
+//                 エラーあり
             return "employees/update";
         }
 
-     // 従業員新規更新処理
-        @PostMapping(value = "/{code}/update")
-        public String save(@Validated Employee employee, BindingResult res, Model model) {
+//             一覧画面にリダイレクト
+        // 論理削除を行った従業員番号を指定すると例外となるためtry~catchで対応
+        // (findByIdでは削除フラグがTRUEのデータが取得出来ないため)
+        try {
+            ErrorKinds result = employeeService.update(employee,code);
 
-            if(res.hasErrors()) {
-//                 エラーあり
+            if (ErrorMessage.contains(result)) {
+                model.addAttribute(ErrorMessage.getErrorName(result), ErrorMessage.getErrorValue(result));
                 return "employees/update";
             }
-            employeeService.save(employee);
-//             一覧画面にリダイレクト
-            return "redirect:/employees";
+
+        } catch (DataIntegrityViolationException e) {
+            model.addAttribute(ErrorMessage.getErrorName(ErrorKinds.DUPLICATE_EXCEPTION_ERROR),
+                    ErrorMessage.getErrorValue(ErrorKinds.DUPLICATE_EXCEPTION_ERROR));
+            return "employees/update";
         }
+
+        return "redirect:/employees";
+    }
 
     // 従業員新規登録画面
     @GetMapping(value = "/add")

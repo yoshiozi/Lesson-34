@@ -52,6 +52,29 @@ public class EmployeeService {
         return ErrorKinds.SUCCESS;
     }
 
+    // 従業員更新保存
+    @Transactional
+    public ErrorKinds update(Employee employee, String code) {
+        Employee oldEmployee = findByCode(code);
+        if ("".equals(employee.getPassword())) {
+            employee.setPassword(oldEmployee.getPassword());
+        } else {
+            // パスワードチェック
+            ErrorKinds result = employeePasswordCheck(employee);
+            if (ErrorKinds.CHECK_OK != result) {
+                return result;
+            }
+        }
+        employee.setDeleteFlg(oldEmployee.isDeleteFlg());
+
+        LocalDateTime now = LocalDateTime.now();
+        employee.setCreatedAt(oldEmployee.getCreatedAt());
+        employee.setUpdatedAt(now);
+
+        employeeRepository.save(employee);
+        return ErrorKinds.SUCCESS;
+    }
+
     // 従業員削除
     @Transactional
     public ErrorKinds delete(String code, UserDetail userDetail) {
